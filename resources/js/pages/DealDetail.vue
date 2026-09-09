@@ -331,7 +331,7 @@ const attachments = (message) =>
                                 max="20"
                                 step="0.01" /></label
                         ><label
-                            >Participação do vendedor (%)<input
+                            >Participação do corretor (%)<input
                                 v-model.number="
                                     form.commission_split.seller_agent
                                 "

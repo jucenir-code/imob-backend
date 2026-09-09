@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Cadastro de Vendedor</title>
+        <title>Cadastro de Corretor</title>
         <style>
             :root {
                 color-scheme: light;
@@ -191,7 +191,7 @@
         <main class="page">
             <section class="card">
                 <span class="eyebrow">Convite Circles</span>
-                <h1>Cadastro de vendedor</h1>
+                <h1>Cadastro de Corretor</h1>
                 <p class="subtitle">
                     Complete seus dados para ativar a conta enviada pela equipe da Circles Imobiliária.
                 </p>

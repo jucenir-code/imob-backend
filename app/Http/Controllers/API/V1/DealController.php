@@ -111,12 +111,12 @@ class DealController extends Controller
             if ($initialStatus === 'proposal') {
                 $deal->messages()->create([
                     'user_id' => $user->id,
-                    'message' => 'Conversa iniciada automaticamente. O proprietário já pode responder.',
+                    'message' => 'Conversa iniciada automaticamente. O corretor já pode responder.',
                 ]);
             } else {
                 $deal->messages()->create([
                     'user_id' => $user->id,
-                    'message' => 'Contato enviado. Aguarde o proprietário aceitar para liberar a conversa.',
+                    'message' => 'Contato enviado. Aguarde o corretor aceitar para liberar a conversa.',
                 ]);
             }
 
