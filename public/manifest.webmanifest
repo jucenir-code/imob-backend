@@ -1,0 +1,19 @@
+{
+    "id": "/app/",
+    "name": "CCI · Central de Corretores de Imóveis",
+    "short_name": "CCI",
+    "lang": "pt-BR",
+    "start_url": "/app/imoveis",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#f7f8fa",
+    "theme_color": "#f0006e",
+    "icons": [
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

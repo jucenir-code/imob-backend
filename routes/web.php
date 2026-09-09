@@ -15,8 +15,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/app/imoveis');
 });
+
+Route::view('/login', 'app')->name('login');
+Route::post('/login', [\App\Http\Controllers\Web\SessionController::class, 'store'])->middleware('throttle:6,1');
+Route::post('/logout', [\App\Http\Controllers\Web\SessionController::class, 'destroy'])->middleware('auth:web');
+Route::get('/session/csrf', fn () => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
+Route::view('/app/{path?}', 'app')->where('path', '.*')->middleware('auth:web');
+
+require __DIR__.'/browser.php';
 
 Route::get('/register', [InviteRegistrationController::class, 'create'])->name('register');
 Route::post('/register', [InviteRegistrationController::class, 'store'])->name('register.store');

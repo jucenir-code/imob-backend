@@ -28,3 +28,7 @@ Laravel 10 API responsável pelo domínio imobiliário com grupos privados, deal
 - Implementar autenticação via Sanctum (login/logout/tokens).
 - Criar migrations e models conforme `docs/data-model.md`.
 - Escrever testes de contrato para filtros de imóveis e fluxo de deals.
+
+## Versão web Vue/PWA
+
+A versão web usa as rotas, sessões e regras do Laravel existente. Veja [como executar, funcionalidades e validação](docs/web.md).

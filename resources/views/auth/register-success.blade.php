@@ -69,6 +69,7 @@
                 @endif
                 e ja esta ativa.
             </p>
+        <p style="margin-top:24px"><a href="{{ route('login') }}" style="color:#f0006e;font-weight:700">Entrar na versão web →</a></p>
         </section>
     </body>
 </html>
