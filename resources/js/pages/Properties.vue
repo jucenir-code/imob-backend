@@ -1,6 +1,5 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
 import {
     http,
     cleanParams,
@@ -12,7 +11,6 @@ import {
 import { session } from "../session";
 import Pagination from "../components/Pagination.vue";
 import Icon from "../components/Icon.vue";
-const route = useRoute();
 const filters = reactive({
     type: "",
     neighborhood: "",
@@ -20,7 +18,6 @@ const filters = reactive({
     price_min: "",
     price_max: "",
     status: "active",
-    group_id: route.query.group_id || "",
 });
 const items = ref([]);
 const meta = ref(null);
@@ -53,7 +50,6 @@ function reset() {
         price_min: "",
         price_max: "",
         status: "active",
-        group_id: "",
     });
     load();
 }
@@ -126,17 +122,6 @@ onMounted(() => load());
                                 :value="key"
                             >
                                 {{ label }}
-                            </option>
-                        </select></label
-                    ><label
-                        >Grupo<select v-model="filters.group_id">
-                            <option value="">Todos os grupos</option>
-                            <option
-                                v-for="group in session.user?.groups"
-                                :key="group.id"
-                                :value="group.id"
-                            >
-                                {{ group.name }}
                             </option>
                         </select></label
                     >

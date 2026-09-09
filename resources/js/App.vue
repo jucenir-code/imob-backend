@@ -13,7 +13,6 @@ const signingOut = ref(false);
 const links = computed(() => [
     { to: "/app/imoveis", label: "Imóveis", icon: "home" },
     { to: "/app/negociacoes", label: "Negociações", icon: "deals" },
-    { to: "/app/grupos", label: "Grupos", icon: "groups" },
     ...(session.user?.role === "admin"
         ? [{ to: "/app/gerenciar", label: "Gerenciar", icon: "admin" }]
         : []),

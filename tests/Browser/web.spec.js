@@ -86,26 +86,39 @@ test("create property and start a negotiation with chat", async ({ page }) => {
             .locator(".message")
             .filter({ hasText: "Olá, tenho interesse neste imóvel." }),
     ).toBeVisible();
-    await page.setViewportSize({ width: 320, height: 750 });
-    await noOverflow(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('input[type="file"]').setInputFiles({
+        name: "conversa.png",
+        mimeType: "image/png",
+        buffer: await page.screenshot(),
+    });
+    const uploaded = page.waitForResponse(response =>
+        response.url().includes('/messages') && response.request().method() === 'POST');
+    await page.getByRole("button", { name: "Enviar →", exact: true }).click();
+    expect((await uploaded).status()).toBe(201);
+    await page.reload();
+    await expect(page.locator(".message img")).toBeVisible();
+    for (const viewport of [
+        { width: 390, height: 844 },
+        { width: 320, height: 568 },
+        { width: 390, height: 500 },
+    ]) {
+        await page.setViewportSize(viewport);
+        await page.evaluate(() => window.scrollTo(0, 0));
+        const input = page.getByLabel("Mensagem", { exact: true });
+        await expect(input).toBeInViewport({ ratio: 1 });
+        const composer = await page.locator(".composer").boundingBox();
+        const navigation = await page.getByRole("navigation", { name: "Menu do celular" }).boundingBox();
+        expect(composer.y + composer.height).toBeLessThanOrEqual(navigation.y + 1);
+        await noOverflow(page);
+    }
+    await page.getByLabel("Mensagem", { exact: true }).fill("Mensagem enviada pelo celular.");
+    await page.getByRole("button", { name: "Enviar →", exact: true }).click();
+    await expect(page.locator(".message").filter({ hasText: "Mensagem enviada pelo celular." })).toBeVisible();
 });
 
-test("group management and administrator invitations", async ({ page }) => {
+test("administrator invitations", async ({ page }) => {
     await login(page, "owner@cci.test");
-    await page.goto("/app/grupos");
-    await page.getByLabel("Nome do novo grupo").fill("Grupo criado na web");
-    await page
-        .getByRole("button", { name: "Criar grupo", exact: true })
-        .click();
-    await page
-        .getByRole("link")
-        .filter({ hasText: "Grupo criado na web" })
-        .click();
-    await page.getByLabel("E-mail do corretor").fill("agent@cci.test");
-    await page.getByRole("button", { name: "Adicionar membro" }).click();
-    await expect(
-        page.locator(".member-row").filter({ hasText: "Rafael Santos" }),
-    ).toBeVisible();
     await page.goto("/app/gerenciar");
     await page.getByRole("button", { name: "Gerar convite" }).click();
     await expect(page.getByLabel("Link do convite")).toHaveValue(

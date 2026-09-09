@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watchPostEffect } from "vue";
 import { useRoute } from "vue-router";
 import { http, unwrap, errorText, dateTime, dealStatuses } from "../http";
 import { session, managesGroup } from "../session";
@@ -14,6 +14,20 @@ const busy = ref(false);
 const text = ref("");
 const files = ref([]);
 const fileInput = ref(null);
+const composer = ref(null);
+const composerHeight = ref(0);
+watchPostEffect((onCleanup) => {
+    if (!composer.value) {
+        composerHeight.value = 0;
+        return;
+    }
+    const element = composer.value;
+    const observer = new ResizeObserver(() => {
+        composerHeight.value = element.getBoundingClientRect().height;
+    });
+    observer.observe(element);
+    onCleanup(() => observer.disconnect());
+});
 const recording = ref(false);
 const recordingSupported = Boolean(
     navigator.mediaDevices?.getUserMedia && window.MediaRecorder,
@@ -240,7 +254,7 @@ const attachments = (message) =>
                 Aceitar negociação
             </button>
         </div>
-        <div class="chat-layout">
+        <div class="chat-layout" :style="{ '--composer-height': `${composerHeight}px` }">
             <section class="panel chat">
                 <div class="section-line">
                     <h2>Conversa</h2>
@@ -300,7 +314,7 @@ const attachments = (message) =>
                     </article>
                 </div>
                 <Pagination :meta="meta" :busy="busy" @change="messagesPage" />
-                <form v-if="canSend" class="composer" @submit.prevent="send">
+                <form v-if="canSend" ref="composer" class="composer" @submit.prevent="send">
                     <label class="sr-only" for="message">Mensagem</label
                     ><textarea
                         id="message"

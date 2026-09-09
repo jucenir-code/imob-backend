@@ -41,16 +41,6 @@ const router = createRouter({
             meta: { title: "Negociação" },
         },
         {
-            path: "/app/grupos",
-            component: () => import("./pages/Groups.vue"),
-            meta: { title: "Grupos" },
-        },
-        {
-            path: "/app/grupos/:id",
-            component: () => import("./pages/Groups.vue"),
-            meta: { title: "Detalhes do grupo" },
-        },
-        {
             path: "/app/gerenciar",
             component: () => import("./pages/Admin.vue"),
             meta: { title: "Gerenciar", admin: true },

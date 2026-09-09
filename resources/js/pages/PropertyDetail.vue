@@ -149,7 +149,6 @@ async function remove() {
                 <hr />
                 <p class="muted">Corretor responsável</p>
                 <h3>{{ property.owner?.name }}</h3>
-                <p class="muted">{{ property.group?.name }}</p>
                 <button
                     v-if="property.owner_id !== session.user?.id"
                     class="primary full"

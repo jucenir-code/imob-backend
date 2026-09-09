@@ -28,7 +28,6 @@ Para desenvolvimento com atualização automática, execute `npm run dev` em out
 - Listagem e filtros de imóveis; detalhes, galeria, criação, edição e exclusão conforme as permissões atuais.
 - Início e aceite de negociações, alteração de situação, cliente, comissão, divisão da comissão e observações.
 - Chat paginado com texto, imagens, envio de áudio e gravação pelo microfone quando suportado pelo navegador. Atualização a cada 15 segundos enquanto a página está visível.
-- Grupos, criação, alteração de nome, exclusão, membros e permissões.
 - Administração: aprovação de corretores, remoção de aprovação, exclusão de contas e geração de convites.
 - Navegação lateral no desktop e inferior no celular, com layouts para tablet e telas estreitas.
 
@@ -51,7 +50,7 @@ npx playwright install chromium
 npm run test:web
 ```
 
-O Playwright inicia um Laravel isolado na porta 8765, cria dados fictícios no diretório temporário do sistema, em `cci-browser-*.sqlite` e verifica login real, filtros, publicação de imóvel, chat, grupos, administração, larguras de 320 a 1440 pixels e fallback offline. Não usa o banco configurado para o aplicativo. Capturas ficam em `backend/test-results/`.
+O Playwright inicia um Laravel isolado na porta 8765, cria dados fictícios no diretório temporário do sistema, em `cci-browser-*.sqlite` e verifica login real, filtros, publicação de imóvel, chat, administração, larguras de 320 a 1440 pixels e fallback offline. Não usa o banco configurado para o aplicativo. Capturas ficam em `backend/test-results/`.
 
 Validação desta implementação: build de produção aprovado; 14 testes de autenticação/web aprovados e 4 cenários Playwright aprovados. A suíte completa também contém 10 falhas nos testes legados de imóveis, grupos e negociações: expectativas de acesso/status divergentes dos controllers atuais, associações duplicadas nas factories e payloads incompletos. As policies e os controllers de domínio não foram alterados para acomodar esses testes.
 
