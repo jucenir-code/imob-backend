@@ -3,9 +3,7 @@ defineProps({ name: String });
 const paths = {
     info: "M12 11v6M12 7h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
     clip: "m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9M6 14l8-8",
-    mic: "M9 5a3 3 0 0 1 6 0v7a3 3 0 0 1-6 0ZM5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8",
     send: "m22 2-7 20-4-9-9-4ZM22 2 11 13",
-    stop: "M6 6h12v12H6Z",
     close: "m6 6 12 12M6 18 18 6",
     down: "M12 4v16m-7-7 7 7 7-7",
     home: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z",

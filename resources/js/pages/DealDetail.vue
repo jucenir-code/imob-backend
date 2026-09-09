@@ -61,10 +61,6 @@ function clearFiles() {
 }
 const messageTime = (value) => new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const messageDay = (value) => new Date(value).toLocaleDateString('pt-BR');
-const recording = ref(false);
-const recordingSupported = Boolean(
-    navigator.mediaDevices?.getUserMedia && window.MediaRecorder,
-);
 const form = reactive({
     status: "",
     buyer_name: "",
@@ -74,10 +70,7 @@ const form = reactive({
     notes: "",
 });
 let timer;
-let recorder;
-let stream;
 let disposed = false;
-let started;
 let polling = false;
 const canAccept = computed(
     () =>
@@ -179,7 +172,14 @@ async function save(accept = false) {
     }
 }
 function selectFiles(event) {
-    files.value = Array.from(event.target.files || []);
+    const selected = Array.from(event.target.files || []);
+    if (selected.some(file => !/^image\/(jpeg|png|webp|heic|heif)$/.test(file.type))) {
+        clearFiles();
+        error.value = "Envie apenas imagens JPG, PNG, WebP, HEIC ou HEIF.";
+        return;
+    }
+    error.value = "";
+    files.value = selected;
 }
 async function send() {
     if (!text.value.trim() && !files.value.length) return;
@@ -204,51 +204,6 @@ async function send() {
         busy.value = false;
     }
 }
-async function record() {
-    if (recording.value) {
-        recorder.stop();
-        return;
-    }
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (disposed) {
-            stream.getTracks().forEach((track) => track.stop());
-            return;
-        }
-        const mimeType = ["audio/webm", "audio/mp4", "audio/ogg"].find((type) =>
-            MediaRecorder.isTypeSupported(type),
-        );
-        recorder = new MediaRecorder(
-            stream,
-            mimeType ? { mimeType } : undefined,
-        );
-        const chunks = [];
-        started = Date.now();
-        recorder.ondataavailable = (event) => {
-            if (event.data.size) chunks.push(event.data);
-        };
-        recorder.onstop = () => {
-            stream?.getTracks().forEach((track) => track.stop());
-            recording.value = false;
-            if (disposed) return;
-            const type = recorder.mimeType.split(";")[0];
-            const extension = type.includes("mp4")
-                ? "m4a"
-                : type.includes("ogg")
-                  ? "ogg"
-                  : "webm";
-            files.value = [
-                new File(chunks, `audio-${Date.now()}.${extension}`, { type }),
-            ];
-        };
-        recorder.start();
-        recording.value = true;
-    } catch {
-        stream?.getTracks().forEach((track) => track.stop());
-        error.value =
-            "Não foi possível acessar o microfone. Permita o acesso ou anexe um arquivo de áudio.";
-    }
-}
 onMounted(async () => {
     updateViewport();
     window.visualViewport?.addEventListener('resize', updateViewport);
@@ -267,8 +222,6 @@ onUnmounted(() => {
     window.removeEventListener('online', updateConnection);
     window.removeEventListener('offline', updateConnection);
     clearInterval(timer);
-    if (recorder?.state === "recording") recorder.stop();
-    stream?.getTracks().forEach((track) => track.stop());
 });
 const attachments = (message) =>
     message.attachments?.length
@@ -328,16 +281,14 @@ const attachments = (message) =>
                 <span>{{ files.map(file => file.name).join(', ') }}</span>
                 <button type="button" class="chat-icon" aria-label="Remover anexos" @click="clearFiles"><Icon name="close" /></button>
             </div>
-            <p v-if="recording" class="recording-status" role="status"><span></span>Gravando áudio… Toque em parar para concluir.</p>
             <div class="composer-row">
-                <label class="chat-icon file-button" title="Anexar imagem ou áudio">
-                    <Icon name="clip" /><span class="sr-only">Anexar imagem ou áudio</span>
-                    <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,audio/*" multiple @change="selectFiles" :disabled="busy || recording" />
+                <label class="chat-icon file-button" title="Anexar imagens">
+                    <Icon name="clip" /><span class="sr-only">Anexar imagens</span>
+                    <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple @change="selectFiles" :disabled="busy" />
                 </label>
                 <label class="sr-only" for="message">Mensagem</label>
-                <textarea id="message" ref="messageInput" v-model="text" rows="1" placeholder="Mensagem" @keydown.enter="($event.ctrlKey || $event.metaKey) && !$event.isComposing && !busy && !recording && send()"></textarea>
-                <button v-if="recordingSupported" type="button" class="chat-icon" :class="{ 'is-recording': recording }" :aria-label="recording ? 'Parar gravação' : 'Gravar áudio'" :disabled="busy" @click="record"><Icon :name="recording ? 'stop' : 'mic'" /></button>
-                <button class="chat-icon send-message" :aria-label="busy ? 'Enviando…' : 'Enviar →'" :disabled="busy || recording || (!text.trim() && !files.length)"><Icon name="send" /></button>
+                <textarea id="message" ref="messageInput" v-model="text" rows="1" placeholder="Mensagem" @keydown.enter="($event.ctrlKey || $event.metaKey) && !$event.isComposing && !busy && send()"></textarea>
+                <button class="chat-icon send-message" :aria-label="busy ? 'Enviando…' : 'Enviar →'" :disabled="busy || (!text.trim() && !files.length)"><Icon name="send" /></button>
             </div>
         </form>
         <p v-else-if="deal" class="conversation-notice">O envio de mensagens está indisponível nesta etapa.</p>
@@ -345,7 +296,7 @@ const attachments = (message) =>
             <header><h2 id="conversation-details-title">Dados da negociação</h2><button type="button" class="chat-icon" aria-label="Fechar detalhes" @click="detailsDialog.close()"><Icon name="close" /></button></header>
             <template v-if="deal">
                 <p class="badge">{{ dealStatuses[deal.status] }}</p>
-                <p class="small muted">Use o chat interno. Não compartilhe telefone, e-mail ou links de contato. Anexe até 6 imagens ou 1 áudio por mensagem; até 20 MB por arquivo.</p>
+                <p class="small muted">Use o chat interno. Não compartilhe telefone, e-mail ou links de contato. Anexe até 6 imagens por mensagem; até 20 MB por arquivo.</p>
                 <p v-if="error" class="alert error" role="alert">{{ error }}</p>
                     <form @submit.prevent="save(false)">
                         <label

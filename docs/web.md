@@ -27,7 +27,7 @@ Para desenvolvimento com atualização automática, execute `npm run dev` em out
 - Login, logout e cadastro pelo convite existente (`/register`).
 - Listagem e filtros de imóveis; detalhes, galeria, criação, edição e exclusão conforme as permissões atuais.
 - Início e aceite de negociações, alteração de situação, cliente, comissão, divisão da comissão e observações.
-- Chat com cabeçalho e barra de envio compactos, histórico com rolagem independente, imagens e áudio. No celular, ocupa a tela e acompanha a área visível ao abrir o teclado. Os dados da negociação ficam no botão de informações. Atualização a cada 15 segundos enquanto a página está visível, preservando a leitura de mensagens antigas.
+- Chat com cabeçalho e barra de envio compactos, histórico com rolagem independente, envio de texto e imagens. Áudios existentes continuam disponíveis para reprodução. No celular, ocupa a tela e acompanha a área visível ao abrir o teclado. Os dados da negociação ficam no botão de informações. Atualização a cada 15 segundos enquanto a página está visível, preservando a leitura de mensagens antigas.
 - Administração: aprovação de corretores, remoção de aprovação, exclusão de contas e geração de convites.
 - Navegação lateral no desktop e inferior no celular, com layouts para tablet e telas estreitas.
 
