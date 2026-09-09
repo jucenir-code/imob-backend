@@ -87,7 +87,7 @@ function applyUpdate() {
         <button class="text-button" @click="applyUpdate">Atualizar</button>
     </div>
     <div v-if="route.meta.public" id="main"><RouterView /></div>
-    <div v-else class="app-shell">
+    <div v-else class="app-shell" :class="{ 'conversation-shell': route.meta.conversation }">
         <aside class="sidebar">
             <RouterLink to="/app/imoveis" class="brand"
                 ><img src="/icons/icon-512.png" alt="CCI" /><span

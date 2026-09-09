@@ -38,7 +38,7 @@ const router = createRouter({
         {
             path: "/app/negociacoes/:id",
             component: () => import("./pages/DealDetail.vue"),
-            meta: { title: "Negociação" },
+            meta: { title: "Negociação", conversation: true },
         },
         {
             path: "/app/gerenciar",

@@ -108,13 +108,64 @@ test("create property and start a negotiation with chat", async ({ page }) => {
         const input = page.getByLabel("Mensagem", { exact: true });
         await expect(input).toBeInViewport({ ratio: 1 });
         const composer = await page.locator(".composer").boundingBox();
-        const navigation = await page.getByRole("navigation", { name: "Menu do celular" }).boundingBox();
-        expect(composer.y + composer.height).toBeLessThanOrEqual(navigation.y + 1);
+        await expect(page.getByRole("navigation", { name: "Menu do celular" })).toBeHidden();
+        expect(composer.y + composer.height).toBeLessThanOrEqual(viewport.height + 1);
+        expect(composer.height).toBeLessThan(90);
+        const history = await page.locator(".messages").boundingBox();
+        expect(history.y + history.height).toBeLessThanOrEqual(composer.y + 1);
+        await expect(page.getByRole("link", { name: "Voltar às negociações" })).toBeInViewport({ ratio: 1 });
         await noOverflow(page);
     }
+    // Simulate the visual viewport shrinking and panning when a mobile keyboard opens.
+    await page.evaluate(() => {
+        Object.defineProperty(window.visualViewport, 'height', { configurable: true, value: 300 });
+        Object.defineProperty(window.visualViewport, 'offsetTop', { configurable: true, value: 80 });
+        window.visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await expect.poll(async () => {
+        const bounds = await page.locator('.conversation').boundingBox();
+        return Math.round(bounds.y + bounds.height);
+    }).toBe(380);
+    await expect(page.getByLabel("Mensagem", { exact: true })).toBeInViewport({ ratio: 1 });
+    await page.evaluate(() => {
+        delete window.visualViewport.height;
+        delete window.visualViewport.offsetTop;
+        window.visualViewport.dispatchEvent(new Event('resize'));
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(async () => Math.round((await page.locator(".conversation").boundingBox()).height)).toBe(844);
+    await page.screenshot({ path: "test-results/cci-chat-mobile.png" });
     await page.getByLabel("Mensagem", { exact: true }).fill("Mensagem enviada pelo celular.");
     await page.getByRole("button", { name: "Enviar →", exact: true }).click();
-    await expect(page.locator(".message").filter({ hasText: "Mensagem enviada pelo celular." })).toBeVisible();
+    await expect(page.locator(".message").filter({ hasText: "Mensagem enviada pelo celular." })).toBeInViewport();
+    for (let index = 0; index < 5; index++) {
+        await page.getByLabel("Mensagem", { exact: true }).fill(`Detalhes do imóvel ${index}. ` + "Podemos combinar uma visita para conhecer os ambientes. ".repeat(4));
+        await page.getByRole("button", { name: "Enviar →", exact: true }).click();
+        await expect(page.getByLabel("Mensagem", { exact: true })).toHaveValue("");
+        await expect(page.getByRole("button", { name: "Enviar →", exact: true })).toBeVisible();
+    }
+    const history = page.locator(".messages");
+    await expect.poll(() => history.evaluate(el => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(5);
+    await history.evaluate(el => { el.scrollTop = 0; });
+    await expect(page.getByRole("button", { name: "Ir para últimas mensagens" })).toBeVisible();
+    // A polling response must preserve the position while reading older messages.
+    await page.waitForResponse(response => response.url().includes('/messages') && response.request().method() === 'GET');
+    await expect.poll(() => history.evaluate(el => el.scrollTop)).toBeLessThan(5);
+    await page.getByRole("button", { name: "Ir para últimas mensagens" }).click();
+    await expect.poll(() => history.evaluate(el => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(5);
+    await page.getByRole("button", { name: "Dados da negociação", exact: true }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByLabel("Observações").fill("Visita combinada pelo chat.");
+    const updated = page.waitForResponse(response => response.request().method() === 'PATCH');
+    await page.getByRole("button", { name: "Salvar alterações" }).click();
+    expect((await updated).status()).toBe(200);
+    await page.getByRole("button", { name: "Fechar detalhes" }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.setViewportSize({ width: 1440, height: 960 });
+    await page.screenshot({ path: "test-results/cci-chat-desktop.png" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("link", { name: "Voltar às negociações" }).click();
+    await expect(page.getByRole("navigation", { name: "Menu do celular" })).toBeVisible();
 });
 
 test("administrator invitations", async ({ page }) => {
@@ -138,6 +189,7 @@ test("PWA manifest and offline fallback do not cache session pages", async ({
     ).json();
     expect(manifest.display).toBe("standalone");
     await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => navigator.serviceWorker.controller);
     await context.setOffline(true);
     await page.goto("/app/imoveis");
     await expect(

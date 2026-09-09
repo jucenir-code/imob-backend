@@ -27,7 +27,7 @@ Para desenvolvimento com atualização automática, execute `npm run dev` em out
 - Login, logout e cadastro pelo convite existente (`/register`).
 - Listagem e filtros de imóveis; detalhes, galeria, criação, edição e exclusão conforme as permissões atuais.
 - Início e aceite de negociações, alteração de situação, cliente, comissão, divisão da comissão e observações.
-- Chat paginado com texto, imagens, envio de áudio e gravação pelo microfone quando suportado pelo navegador. Atualização a cada 15 segundos enquanto a página está visível.
+- Chat com cabeçalho e barra de envio compactos, histórico com rolagem independente, imagens e áudio. No celular, ocupa a tela e acompanha a área visível ao abrir o teclado. Os dados da negociação ficam no botão de informações. Atualização a cada 15 segundos enquanto a página está visível, preservando a leitura de mensagens antigas.
 - Administração: aprovação de corretores, remoção de aprovação, exclusão de contas e geração de convites.
 - Navegação lateral no desktop e inferior no celular, com layouts para tablet e telas estreitas.
 
@@ -48,6 +48,8 @@ php artisan test
 npm run build
 npx playwright install chromium
 npm run test:web
+npx playwright install webkit
+PLAYWRIGHT_BROWSER=webkit npm run test:web
 ```
 
 O Playwright inicia um Laravel isolado na porta 8765, cria dados fictícios no diretório temporário do sistema, em `cci-browser-*.sqlite` e verifica login real, filtros, publicação de imóvel, chat, administração, larguras de 320 a 1440 pixels e fallback offline. Não usa o banco configurado para o aplicativo. Capturas ficam em `backend/test-results/`.
@@ -55,3 +57,7 @@ O Playwright inicia um Laravel isolado na porta 8765, cria dados fictícios no d
 Validação desta implementação: build de produção aprovado; 14 testes de autenticação/web aprovados e 4 cenários Playwright aprovados. A suíte completa também contém 10 falhas nos testes legados de imóveis, grupos e negociações: expectativas de acesso/status divergentes dos controllers atuais, associações duplicadas nas factories e payloads incompletos. As policies e os controllers de domínio não foram alterados para acomodar esses testes.
 
 Referências de implementação: [Laravel + Vue/Vite](https://laravel.com/docs/10.x/vite#vue), [Vue](https://vuejs.org/guide/quick-start.html), [estratégias de cache de PWA](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Caching).
+
+O ajuste do chat usa [VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport) para acompanhar teclado e barras do navegador. Os testes simulam a redução e o deslocamento da área visível; não substituem uma verificação em iPhone físico.
+
+Validação do novo chat: os cenários de login, conversa e administração passaram no WebKit 26.6. O cenário de navegação offline retorna `WebKit encountered an internal error` ao navegar após `context.setOffline(true)`, mesmo com o service worker controlando a página; esse cenário não foi validado nesse navegador. O service worker não foi alterado nesta revisão.

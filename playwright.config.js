@@ -8,6 +8,9 @@ export default defineConfig({
     workers: 1,
     timeout: 45000,
     use: {
+        browserName: process.env.PLAYWRIGHT_BROWSER || "chromium",
+        isMobile: process.env.PLAYWRIGHT_BROWSER === "webkit",
+        hasTouch: process.env.PLAYWRIGHT_BROWSER === "webkit",
         baseURL: "http://127.0.0.1:8765",
         headless: true,
         trace: "retain-on-failure",
