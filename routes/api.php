@@ -8,7 +8,7 @@ use App\Http\Controllers\API\V1\GroupMemberController;
 use App\Http\Controllers\API\V1\PropertyController;
 use App\Http\Controllers\API\V1\HealthController;
 use App\Http\Controllers\API\V1\PushTokenController;
-use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\API\Admin\UserController as AdminUserController;
 use App\Http\Controllers\API\Admin\UserInviteController;
 use Illuminate\Support\Facades\Route;
 

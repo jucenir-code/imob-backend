@@ -1,6 +1,8 @@
 .env
 .git
+.git_disabled
 .gitignore
+.npm-cache
 node_modules
 vendor
 storage/logs
@@ -14,3 +16,16 @@ README 2.md
 Dockerfile*
 docker-compose*.yml
 .DS_Store
+.env.*
+!.env.example
+public/build
+public/hot
+public/storage
+storage/app/public/*
+test-results
+playwright-report
+*.sqlite
+*.sqlite-*
+*.log
+docker/smoke-test.py
+**/__pycache__

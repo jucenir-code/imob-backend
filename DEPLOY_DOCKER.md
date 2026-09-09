@@ -1,76 +1,77 @@
-# Deploy Docker Production
+# Deploy Docker Hub / Portainer
 
-## 1. Preparar ambiente
+A imagem `jcinformatica/circles-backend` contém Laravel, a web Vue/PWA compilada, PHP-FPM, Nginx, worker e scheduler. A porta HTTP do container é `80`. O build usa Node 22 em uma etapa separada; Node e node_modules não entram na imagem final.
 
-Crie o arquivo `.env` de produção com pelo menos:
+## Build e publicação
 
-```env
-APP_NAME="Circles Imobiliaria"
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://api.seudominio.com
-API_VERSION=v1
+Execute na raiz deste repositório (a pasta `backend/` no workspace):
 
-DB_CONNECTION=mysql
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE=imobiliaria
-DB_USERNAME=imobiliaria
-DB_PASSWORD=senha-forte
-DB_ROOT_PASSWORD=senha-root-forte
-
-CACHE_DRIVER=file
-QUEUE_CONNECTION=database
-SESSION_DRIVER=file
-FILESYSTEM_DISK=public
-
-LOG_CHANNEL=stack
-LOG_LEVEL=warning
+```sh
+docker login
+docker buildx build --platform linux/amd64 \
+  -t jcinformatica/circles-backend:latest \
+  -t jcinformatica/circles-backend:VERSAO \
+  --push .
 ```
 
-Defina também suas variáveis reais de mail, AWS, push, CORS e Sanctum.
+Use o hash do commit em `VERSAO`, para permitir rollback. A imagem de produção atual usa Linux AMD64. O Dockerfile também aceita build para ARM64 quando necessário.
 
-## 2. Subir containers
+Se já houver um build configurado no Docker Hub, a origem é `jucenir-code/imob-backend`, branch `master`, contexto `/` e Dockerfile na raiz. Um push no GitHub só dispara o build se essa integração estiver configurada.
 
-```bash
-cd backend
-docker compose -f docker-compose.prod.yml up -d --build
+## Configuração da stack
+
+Use `portainer-stack.yml` no Portainer ou `docker-compose.prod.yml` com Docker Compose. Defina as variáveis da stack:
+
+- `PROD_APP_KEY`: **mantenha a chave da instalação existente**.
+- `PROD_APP_URL`: domínio público completo, com HTTPS.
+- `PROD_DB_PASSWORD`: senha atual do usuário do MySQL.
+- `PROD_DB_ROOT_PASSWORD`: senha atual do root do MySQL.
+- `BACKEND_IMAGE`: `jcinformatica/circles-backend:latest` ou uma tag de versão.
+- `PROD_SESSION_SECURE_COOKIE`: `true` em produção com HTTPS.
+
+Preserve os nomes da stack e dos volumes `db_data` e `backend_storage` ao atualizar. Mudar variáveis de senha não altera as contas de um volume MySQL que já existe.
+
+Somente para uma instalação nova, gere a chave uma única vez:
+
+```sh
+php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
 ```
 
-## 3. Acessar
+A migration incluída cria a tabela `jobs` quando ela ainda não existe. O intervalo de recuperação da fila é 180 segundos, maior que o timeout de 120 segundos do worker; a tabela é preservada no rollback para manter tarefas pendentes.
 
-API:
+O container recebe configuração pelas variáveis de ambiente; não precisa de um `.env` dentro da imagem. Na inicialização ele prepara permissões, aguarda o banco, executa migrations e cria os caches Laravel. Para executar migrations separadamente, use `RUN_MIGRATIONS=false`.
 
-```text
-http://SEU_SERVIDOR:8000
+## Atualizar produção
+
+No Portainer, atualize a stack com a opção de baixar novamente a imagem. Com Compose:
+
+```sh
+docker compose -f docker-compose.prod.yml pull app
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-## 4. Comandos úteis
+Não é necessário executar `npm run build` no servidor. O Vue já está compilado dentro da imagem.
 
-Logs:
+## Verificar
 
-```bash
-docker compose -f docker-compose.prod.yml logs -f
+- `/login`: tela de entrada da web.
+- `/app/imoveis`: redireciona ao login quando não há sessão.
+- `/api/v1/health`: saúde da API do aplicativo.
+- `/manifest.webmanifest` e `/sw.js`: arquivos do PWA.
+
+O healthcheck da imagem verifica a resposta HTTP de `/login`. Para ver os processos e os logs:
+
+```sh
+docker compose -f docker-compose.prod.yml exec app supervisorctl -c /etc/supervisord.conf status
+docker compose -f docker-compose.prod.yml logs --tail=100 app
 ```
 
-Rebuild:
+O acesso público deve passar por um proxy com HTTPS. O Laravel reconhece os cabeçalhos encaminhados pelo proxy e gera URLs HTTPS em produção.
 
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
+## Teste isolado da imagem
+
+```sh
+python3 docker/smoke-test.py jcinformatica/circles-backend:VERSAO
 ```
 
-Executar comando artisan:
-
-```bash
-docker compose -f docker-compose.prod.yml exec app php artisan about
-```
-
-## 5. Produção real
-
-Para produção pública, o ideal é colocar um proxy reverso com HTTPS na frente, por exemplo:
-
-- Nginx no host
-- Traefik
-- Caddy
-
-Também é recomendável mover o MySQL para um serviço gerenciado ou volume dedicado com backup.
+Esse teste cria containers temporários, usa um banco MySQL separado e remove seus próprios recursos ao terminar. Verifica HTTP, assets Vue, API, PWA, login, administração, os quatro processos e persistência da sessão após reiniciar o container.
