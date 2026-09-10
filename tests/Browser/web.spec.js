@@ -59,6 +59,24 @@ test("native login, responsive navigation, property filters and logout", async (
 test("create property and start a negotiation with chat", async ({ page }) => {
     await login(page);
     await page.getByRole("link", { name: "Cadastrar imóvel" }).click();
+    // Installed iPhone PWAs reserve extra space for the home indicator.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => document.documentElement.style.setProperty('--mobile-safe-bottom', '34px'));
+    const saveButton = page.getByRole("button", { name: "Salvar imóvel", exact: true });
+    const assertFormActionsVisible = async () => {
+        const menu = await page.getByRole("navigation", { name: "Menu do celular" }).boundingBox();
+        for (const action of [saveButton, page.getByRole("link", { name: "Cancelar", exact: true })]) {
+            await expect(action).toBeInViewport({ ratio: 1 });
+            const bounds = await action.boundingBox();
+            expect(bounds.y + bounds.height).toBeLessThanOrEqual(menu.y);
+            await action.click({ trial: true });
+        }
+    };
+    for (const size of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(size);
+        await assertFormActionsVisible();
+    }
+    await page.screenshot({ path: "test-results/cci-property-form-pwa.png" });
     await page
         .getByLabel("Título do anúncio")
         .fill("Imóvel publicado pela web");
@@ -68,12 +86,14 @@ test("create property and start a negotiation with chat", async ({ page }) => {
     await page.getByLabel("Bairro", { exact: true }).fill("Centro");
     await page.getByLabel("Cidade", { exact: true }).fill("São Paulo");
     await page.getByLabel("Preço (R$)").fill("550000");
+    await assertFormActionsVisible();
     const saved = page.waitForResponse(response => response.url().endsWith('/web/properties') && response.request().method() === 'POST');
     await page.getByRole("button", { name: "Salvar imóvel" }).click();
     expect((await saved).status()).toBe(201);
     await expect(
         page.getByRole("heading", { name: "Imóvel publicado pela web" }),
     ).toBeVisible();
+    await page.evaluate(() => document.documentElement.style.removeProperty('--mobile-safe-bottom'));
     await page.goto("/app/imoveis/1");
     await page.getByRole("button", { name: "Iniciar negociação" }).click();
     await expect(page).toHaveURL(/\/app\/negociacoes\/\d+$/);
