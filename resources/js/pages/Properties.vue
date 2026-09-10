@@ -70,9 +70,11 @@ onMounted(() => load());
                 v-if="
                     session.user?.is_approved || session.user?.role === 'admin'
                 "
-                class="primary"
+                class="primary property-create"
                 to="/app/imoveis/novo"
-                ><Icon name="plus" />Cadastrar imóvel</RouterLink
+                aria-label="Cadastrar imóvel"
+                title="Cadastrar imóvel"
+                ><Icon name="plus" /><span class="property-create-label">Cadastrar imóvel</span></RouterLink
             >
         </div>
         <RouterLink class="notification-invite" to="/app/notificacoes">Ative os avisos de novas mensagens e imóveis →</RouterLink>

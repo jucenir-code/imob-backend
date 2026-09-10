@@ -1648,6 +1648,25 @@ main {
     .conversation .file-button { padding: 0; width: 36px; }
 }
 
+@media (max-width: 760px) {
+    .page-heading > .property-create {
+        position: fixed;
+        right: max(20px, env(safe-area-inset-right));
+        bottom: calc(80px + env(safe-area-inset-bottom));
+        z-index: 30;
+        display: grid;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        min-height: 56px;
+        padding: 0;
+        border-radius: 50%;
+        box-shadow: 0 6px 18px #d4006240, 0 2px 5px #18223514;
+    }
+    .property-create svg { width: 26px; height: 26px; stroke-width: 2; }
+    .property-create-label { display: none; }
+}
+
 .notification-invite { display: block; margin: 0 0 18px; font-size: 13px; color: var(--pink); }
 .app-update {
     position: fixed;
