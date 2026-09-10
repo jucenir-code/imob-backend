@@ -34,7 +34,7 @@ self.addEventListener("fetch", (event) => {
     // Never store HTML with session/CSRF data, domain responses, or private attachments.
     if (event.request.mode === "navigate") {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match(FALLBACK)),
+            fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(FALLBACK)),
         );
     } else if (
         url.pathname.startsWith("/build/assets/") ||

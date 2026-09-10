@@ -18,6 +18,14 @@ A migração `2026_09_09_150000_add_property_views` adiciona o contador e os reg
 
 Verificação: `PropertyViewsTest` cobre deduplicação entre web/API, mudança de dia, visitantes distintos, permissões, CSRF, rascunhos e exclusão. `property-views.spec.js` verifica persistência após recarregar/voltar à lista e cards de 320 a 1440 pixels, inclusive totais grandes e localização extensa. O smoke test Docker também verifica a migração e a persistência do contador em MySQL após reiniciar.
 
+## Atualizações do atalho/PWA
+
+O documento recebe a versão dos assets compilados e do service worker em uma meta tag. O endpoint público `/app-version` entrega apenas esse identificador, sem cache. O app confere ao iniciar, retornar do segundo plano, recuperar conexão e a cada minuto enquanto estiver visível. Isso detecta alterações em Vue/CSS mesmo quando `sw.js` permanece igual. A verificação não requer permissão de notificações.
+
+O aviso “Nova versão disponível” aparece sobre todas as telas, inclusive imóveis e conversa. “Depois” mantém a tela atual e volta a lembrar ao reabrir o app. “Atualizar agora” ativa um worker pendente, se houver, e recarrega o documento inteiro; salve edições antes de tocar. A versão nova do HTML não é armazenada em cache. A inscrição de Web Push e a sessão não são apagadas.
+
+Atalhos que ainda executam uma versão anterior à correção precisam carregar esta versão uma primeira vez: após atualizar a imagem no servidor, feche o app pelo seletor do celular e abra pelo ícone. Não é necessário recriar o atalho. Versões seguintes passam a ser detectadas pelo aviso. Testes cobrem identificação de mudanças só no frontend, recarga na lista com contador de visualizações, preservação de rascunho ao adiar e ativação de worker pendente. O navegador simula as mudanças de versão; a instalação física no iPhone precisa ser conferida no dispositivo.
+
 ## Executar
 
 Dentro de `backend/`, usando Node 20.19+ (ou 22.12+), com o `.env` e banco já configurados:

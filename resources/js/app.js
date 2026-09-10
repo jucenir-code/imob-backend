@@ -62,8 +62,3 @@ router.beforeEach(async (to) => {
     document.title = `${to.meta.title || "Imóveis"} · CCI`;
 });
 createApp(App).use(router).mount("#app");
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
-    window.addEventListener("load", () =>
-        navigator.serviceWorker.register("/sw.js").catch(() => {}),
-    );
-}

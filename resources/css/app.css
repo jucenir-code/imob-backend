@@ -1649,6 +1649,29 @@ main {
 }
 
 .notification-invite { display: block; margin: 0 0 18px; font-size: 13px; color: var(--pink); }
+.app-update {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 420px;
+    margin-left: auto;
+    padding: 16px;
+    border: 1px solid #f7cddd;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 32px #18223524;
+}
+.app-update > svg { color: var(--pink); margin-top: 2px; }
+.app-update-content { min-width: 0; }
+.app-update strong { display: block; font-size: 14px; }
+.app-update p { margin: 5px 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.app-update-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.app-update-actions .primary { min-height: 40px; padding: 9px 14px; font-size: 12px; }
 .notification-settings { max-width: 680px; }
 
 .push-toast { position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px; left: 12px; margin-left: auto; max-width: 380px; z-index: 80; display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: white; border: 1px solid var(--border); border-left: 4px solid var(--pink); border-radius: 12px; box-shadow: 0 4px 24px #18223522; }

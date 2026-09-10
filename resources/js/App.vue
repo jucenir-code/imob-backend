@@ -4,11 +4,12 @@ import { useRoute } from "vue-router";
 import { session } from "./session";
 import { http, errorText } from "./http";
 import { disablePush } from "./push";
+import { useAppUpdates } from "./updates";
 import Icon from "./components/Icon.vue";
 const route = useRoute();
 const online = ref(navigator.onLine);
 const installPrompt = ref(null);
-const update = ref(null);
+const { visible: updateVisible, applying: applyingUpdate, error: updateError, apply: applyUpdate, dismiss: dismissUpdate } = useAppUpdates();
 const error = ref("");
 const signingOut = ref(false);
 const pushNotice = ref(null);
@@ -62,20 +63,6 @@ onMounted(() => {
     window.addEventListener("offline", connectivity);
     window.addEventListener("beforeinstallprompt", captureInstall);
     window.addEventListener("appinstalled", installed);
-    if ("serviceWorker" in navigator && import.meta.env.PROD)
-        navigator.serviceWorker.ready.then((registration) => {
-            if (registration.waiting) update.value = registration.waiting;
-            registration.addEventListener("updatefound", () => {
-                const worker = registration.installing;
-                worker?.addEventListener("statechange", () => {
-                    if (
-                        worker.state === "installed" &&
-                        navigator.serviceWorker.controller
-                    )
-                        update.value = worker;
-                });
-            });
-        });
 });
 onUnmounted(() => {
     navigator.serviceWorker?.removeEventListener("message", receivePush);
@@ -85,14 +72,6 @@ onUnmounted(() => {
     window.removeEventListener("beforeinstallprompt", captureInstall);
     window.removeEventListener("appinstalled", installed);
 });
-function applyUpdate() {
-    navigator.serviceWorker.addEventListener(
-        "controllerchange",
-        () => location.reload(),
-        { once: true },
-    );
-    update.value?.postMessage("SKIP_WAITING");
-}
 </script>
 <template>
     <aside v-if="pushNotice" class="push-toast" role="status">
@@ -103,10 +82,17 @@ function applyUpdate() {
     <div v-if="!online" class="network-banner" role="status">
         Você está sem conexão. Reconecte-se para carregar e salvar informações.
     </div>
-    <div v-if="update" class="network-banner">
-        Uma nova versão está disponível.
-        <button class="text-button" @click="applyUpdate">Atualizar</button>
-    </div>
+    <aside v-if="updateVisible" class="app-update" role="status" aria-label="Atualização do aplicativo">
+        <Icon name="download" />
+        <div class="app-update-content">
+            <strong>Nova versão disponível</strong>
+            <p>{{ updateError || 'Salve o que estiver editando antes de atualizar.' }}</p>
+            <div class="app-update-actions">
+                <button class="primary" :disabled="applyingUpdate || !online" @click="applyUpdate">{{ applyingUpdate ? 'Atualizando…' : 'Atualizar agora' }}</button>
+                <button class="text-button" :disabled="applyingUpdate" @click="dismissUpdate">Depois</button>
+            </div>
+        </div>
+    </aside>
     <div v-if="route.meta.public" id="main"><RouterView /></div>
     <div v-else class="app-shell" :class="{ 'conversation-shell': route.meta.conversation }">
         <aside class="sidebar">

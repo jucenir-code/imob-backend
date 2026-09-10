@@ -36,7 +36,7 @@ export async function enablePush(publicKey, userId) {
     // Permission is requested directly by the user's button click.
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') throw new Error('Permita as notificações nas configurações do navegador para ativar os avisos.');
-    const registration = await navigator.serviceWorker.register('/sw.js');
+    const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
     await activateWorker(registration);
     await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();

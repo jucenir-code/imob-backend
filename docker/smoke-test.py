@@ -72,6 +72,10 @@ try:
     wait_for(lambda: request('/login').status == 200, 'Laravel HTTP readiness')
     login = request('/login').read().decode()
     assert 'id="app"' in login, 'Vue shell missing'
+    version_response = request('/app-version')
+    assert 'no-store' in version_response.headers['Cache-Control']
+    version = json.load(version_response)['version']
+    assert len(version) == 64 and ('name="app-version" content="' + version + '"') in login
     assert json.load(request('/api/v1/health'))['status'] == 'ok'
     assert json.load(request('/manifest.webmanifest'))['display'] == 'standalone'
     assert request('/sw.js').status == 200
