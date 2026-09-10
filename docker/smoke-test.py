@@ -105,6 +105,22 @@ App\\Models\\User::create(["name"=>"Docker Smoke", "email"=>"smoke@cci.test",
     assert request('/web/push/subscriptions', subscription, csrf).status == 200
     assert request('/web/push/subscriptions', {'endpoint': subscription['endpoint']}, csrf, 'DELETE').status == 204
     print('PASS: Web Push key generation and authenticated enrollment/removal', flush=True)
+    seed_property = r'''require "vendor/autoload.php"; $app = require "bootstrap/app.php";
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$owner = App\Models\User::create(["name"=>"Corretor Smoke", "email"=>"owner@cci.test",
+"password"=>Illuminate\Support\Facades\Hash::make("smoke-test-only-123"), "status"=>"active"]);
+$group = App\Models\Group::create(["name"=>"Carteira Smoke", "visibility"=>"private", "owner_id"=>$owner->id]);
+$property = App\Models\Property::withoutEvents(fn () => App\Models\Property::create([
+"group_id"=>$group->id, "owner_id"=>$owner->id, "title"=>"Apartamento Smoke", "slug"=>"smoke",
+"description"=>"Teste", "type"=>"apartment", "neighborhood"=>"Centro", "city"=>"Laguna", "state"=>"SC", "status"=>"active"]));
+echo $property->id;'''
+    property_id = docker('exec', app, 'php', '-r', seed_property)
+    property_url = '/web/properties/' + property_id
+    assert json.load(request(property_url))['data']['views_count'] == 0
+    assert json.load(request(property_url + '/views', {}, csrf))['views_count'] == 1
+    assert json.load(request(property_url + '/views', {}, csrf))['views_count'] == 1
+    assert json.load(request('/web/properties'))['data'][0]['views_count'] == 1
+    print('PASS: MySQL property view migration, persistence and daily deduplication', flush=True)
     wait_for(lambda: docker('exec', app, 'supervisorctl', '-c', '/etc/supervisord.conf', 'status').count('RUNNING') == 4, 'all Supervisor processes', 30)
     print('PASS: Nginx, PHP-FPM, queue worker and scheduler', flush=True)
     with tempfile.TemporaryDirectory(prefix='cci-queue-smoke-') as directory:
@@ -131,6 +147,7 @@ Illuminate\Support\Facades\Queue::push(new App\Jobs\DockerSmokeJob);'''
     origin = 'http://127.0.0.1:' + port
     wait_for(lambda: request('/web/profile').status == 200, 'session after restart')
     assert json.load(request('/web/push/config'))['public_key'] == push_config['public_key']
+    assert json.load(request(property_url))['data']['views_count'] == 1
     print('PASS: Session and Web Push identity survive restart with the same APP_KEY', flush=True)
 except Exception:
     try:

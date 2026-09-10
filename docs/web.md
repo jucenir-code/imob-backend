@@ -8,6 +8,16 @@ A web é servida pelo **mesmo Laravel em `backend/`**. Não há outro backend, b
 - O navegador usa sessão Laravel e CSRF. Não armazena tokens em localStorage; a autenticação Sanctum por token do aplicativo continua disponível.
 - O Dockerfile existente já executa `npm ci` e `npm run build`.
 
+## Visualizações dos imóveis
+
+Cards e detalhes exibem o total com um ícone de olho, à direita da localização. A contagem começa em zero após a atualização; não há histórico retroativo.
+
+Ao abrir os detalhes, a web envia `POST /web/properties/{id}/views`. O endpoint equivalente `/api/v1/properties/{id}/views` fica disponível para integração do aplicativo nativo. Listar, buscar os dados para editar e carregar imagens não contam acessos. O banco registra no máximo uma visita por conta/imóvel/dia, no fuso configurado pelo Laravel. Visitas do próprio corretor e a rascunhos não contam. O total acumula essas visitas diárias, não representa pessoas únicas em todo o período.
+
+A migração `2026_09_09_150000_add_property_views` adiciona o contador e os registros de deduplicação. Transação, bloqueio do imóvel e índice único protegem contra requisições simultâneas. O contador não altera `updated_at` nem dispara notificações de imóveis. A remoção de uma conta preserva o total histórico, eliminando seus registros individuais por chave estrangeira.
+
+Verificação: `PropertyViewsTest` cobre deduplicação entre web/API, mudança de dia, visitantes distintos, permissões, CSRF, rascunhos e exclusão. `property-views.spec.js` verifica persistência após recarregar/voltar à lista e cards de 320 a 1440 pixels, inclusive totais grandes e localização extensa. O smoke test Docker também verifica a migração e a persistência do contador em MySQL após reiniciar.
+
 ## Executar
 
 Dentro de `backend/`, usando Node 20.19+ (ou 22.12+), com o `.env` e banco já configurados:

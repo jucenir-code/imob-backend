@@ -11,6 +11,7 @@ import {
 } from "../http";
 import { session, managesGroup } from "../session";
 import Icon from "../components/Icon.vue";
+import PropertyViews from "../components/PropertyViews.vue";
 const route = useRoute();
 const router = useRouter();
 const property = ref(null);
@@ -29,6 +30,10 @@ onMounted(async () => {
         property.value = unwrap(
             await http.get(`/properties/${route.params.id}`),
         );
+        // Register only a successfully opened detail page, never a list or edit request.
+        http.post(`/properties/${property.value.id}/views`)
+            .then(({ data }) => { property.value.views_count = data.views_count; })
+            .catch(() => { /* A failed analytics request must not hide the property. */ });
     } catch (e) {
         error.value = errorText(e);
     } finally {
@@ -76,11 +81,14 @@ async function remove() {
                     {{ propertyStatuses[property.status] }}</span
                 >
                 <h1>{{ property.title }}</h1>
-                <p class="muted">
-                    {{ property.neighborhood }} · {{ property.city }}/{{
-                        property.state
-                    }}
-                </p>
+                <div class="property-detail-location">
+                    <p class="muted">
+                        {{ property.neighborhood }} · {{ property.city }}/{{
+                            property.state
+                        }}
+                    </p>
+                    <PropertyViews :count="property.views_count" />
+                </div>
             </div>
             <RouterLink
                 v-if="editable"

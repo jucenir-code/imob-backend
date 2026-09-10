@@ -22,6 +22,7 @@ Route::prefix('web')->name('web.')->middleware('auth:web')->group(function () {
     Route::delete('groups/{group}/members/{member}', [GroupMemberController::class, 'destroy'])->name('groups.members.destroy');
     Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
     Route::get('properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
+    Route::post('properties/{property}/views', \App\Http\Controllers\API\V1\PropertyViewController::class)->middleware('throttle:60,1')->name('properties.views');
     Route::middleware('approved')->group(function () {
         Route::post('properties', [PropertyController::class, 'store'])->name('properties.store');
         Route::put('properties/{property}', [PropertyController::class, 'update'])->name('properties.update');

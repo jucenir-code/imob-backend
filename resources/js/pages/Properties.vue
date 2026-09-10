@@ -11,6 +11,7 @@ import {
 import { session } from "../session";
 import Pagination from "../components/Pagination.vue";
 import Icon from "../components/Icon.vue";
+import PropertyViews from "../components/PropertyViews.vue";
 const filters = reactive({
     type: "",
     neighborhood: "",
@@ -178,11 +179,14 @@ onMounted(() => load());
                     }}</span>
                 </div>
                 <div class="property-body">
-                    <p class="location">
-                        {{ property.neighborhood }} · {{ property.city }}/{{
-                            property.state
-                        }}
-                    </p>
+                    <div class="property-location-row">
+                        <p class="location">
+                            {{ property.neighborhood }} · {{ property.city }}/{{
+                                property.state
+                            }}
+                        </p>
+                        <PropertyViews :count="property.views_count" />
+                    </div>
                     <h3>{{ property.title }}</h3>
                     <strong class="price">{{
                         property.price_visibility === "hide"

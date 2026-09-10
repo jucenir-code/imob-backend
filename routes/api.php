@@ -33,6 +33,7 @@ Route::prefix(config('app.api_version'))
             // Properties - criar/editar/deletar requer aprovação
             Route::get('properties', [PropertyController::class, 'index'])->name('properties.index');
             Route::get('properties/{property}', [PropertyController::class, 'show'])->name('properties.show');
+            Route::post('properties/{property}/views', \App\Http\Controllers\API\V1\PropertyViewController::class)->middleware('throttle:60,1')->name('properties.views');
             Route::middleware('approved')->group(function () {
                 Route::post('properties', [PropertyController::class, 'store'])->name('properties.store');
                 Route::put('properties/{property}', [PropertyController::class, 'update'])->name('properties.update');

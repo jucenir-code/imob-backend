@@ -39,6 +39,7 @@ class Property extends Model
     ];
 
     protected $casts = [
+        'views_count' => 'integer',
         'area_m2' => 'decimal:2',
         'lat' => 'float',
         'lng' => 'float',
