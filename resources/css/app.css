@@ -1474,6 +1474,15 @@ main {
 
 /* The conversation owns its scrolling area; header and composer remain in flow. */
 .conversation-shell main { padding-top: 24px; padding-bottom: 24px; }
+.conversation-viewport-measure {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 100dvh;
+    visibility: hidden;
+    pointer-events: none;
+}
 .conversation {
     display: flex;
     flex-direction: column;
@@ -1605,7 +1614,13 @@ main {
 .conversation-details h2 { margin: 0; }
 .conversation-details form > button { margin: 8px 0 20px; }
 @media (max-width: 760px) {
-    body:has(.conversation-shell) { overflow: hidden; overscroll-behavior: none; }
+    html:has(.conversation-shell), body:has(.conversation-shell) {
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    body:has(.conversation-shell) { position: fixed; inset: 0; width: 100%; }
+    .conversation-shell { height: 100%; min-height: 0; }
     .conversation-shell .bottom-nav, .conversation-shell .topbar { display: none; }
     .conversation-shell main { padding: 0; }
     .conversation {
@@ -1618,7 +1633,7 @@ main {
         z-index: 25;
         border: 0;
         border-radius: 0;
-        padding-top: env(safe-area-inset-top);
+        padding-top: var(--conversation-safe-top, env(safe-area-inset-top));
         background: #fff;
     }
     .conversation-header { gap: 8px; padding: 8px max(8px, env(safe-area-inset-right)) 8px max(4px, env(safe-area-inset-left)); }
@@ -1628,7 +1643,7 @@ main {
     .conversation-heading p { font-size: 11px; }
     .conversation .messages { padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
     .conversation .message { max-width: 86%; }
-    .conversation .composer { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+    .conversation .composer { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, var(--conversation-safe-bottom, env(safe-area-inset-bottom))) max(8px, env(safe-area-inset-left)); }
     .composer-row { gap: 4px; }
     .conversation .file-button { padding: 0; width: 36px; }
 }

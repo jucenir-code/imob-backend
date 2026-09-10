@@ -117,6 +117,7 @@ test("create property and start a negotiation with chat", async ({ page }) => {
         await noOverflow(page);
     }
     // Simulate the visual viewport shrinking and panning when a mobile keyboard opens.
+    await page.getByLabel("Mensagem", { exact: true }).focus();
     await page.evaluate(() => {
         Object.defineProperty(window.visualViewport, 'height', { configurable: true, value: 300 });
         Object.defineProperty(window.visualViewport, 'offsetTop', { configurable: true, value: 80 });

@@ -21,6 +21,9 @@ const detailsDialog = ref(null);
 const nearBottom = ref(true);
 const online = ref(navigator.onLine);
 const viewportStyle = ref({});
+const viewportMeasure = ref(null);
+let viewportFrame;
+let viewportTimer;
 const otherPerson = computed(() =>
     deal.value?.seller_agent?.id === session.user?.id
         ? deal.value?.buyer_agent : deal.value?.seller_agent,
@@ -48,11 +51,39 @@ function updateViewport() {
     const viewport = window.visualViewport;
     // Let native pinch zoom work; compensate only for the keyboard/browser bars.
     if (viewport && viewport.scale !== 1) return;
-    viewportStyle.value = {
-        '--conversation-height': `${viewport?.height || window.innerHeight}px`,
-        '--conversation-top': `${viewport?.offsetTop || 0}px`,
-    };
+    const layoutHeight = viewportMeasure.value?.getBoundingClientRect().height || window.innerHeight;
+    const keyboardOpen = window.matchMedia('(max-width: 760px)').matches
+        && document.activeElement === messageInput.value
+        && viewport?.height > 0
+        && layoutHeight - viewport.height > 100;
+
+    // iOS can retain the keyboard's offset after dismissal or reopening a PWA.
+    // With no keyboard, let 100dvh and top: 0 own the layout instead of stale metrics.
+    viewportStyle.value = keyboardOpen ? {
+        '--conversation-height': `${viewport.height}px`,
+        '--conversation-top': `${Math.max(0, Math.min(viewport.offsetTop, layoutHeight - viewport.height))}px`,
+        '--conversation-safe-top': '0px',
+        '--conversation-safe-bottom': '0px',
+    } : {};
     if (nearBottom.value) nextTick(scrollToBottom);
+}
+function scheduleViewport() {
+    cancelAnimationFrame(viewportFrame);
+    viewportFrame = requestAnimationFrame(updateViewport);
+}
+function settleViewport() {
+    scheduleViewport();
+    clearTimeout(viewportTimer);
+    // Safari finishes keyboard/orientation animations after the initial event.
+    viewportTimer = setTimeout(scheduleViewport, 350);
+}
+function restoreViewport() {
+    if (document.hidden) return;
+    if (window.matchMedia('(max-width: 760px)').matches) {
+        messageInput.value?.blur();
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+    settleViewport();
 }
 function updateConnection() { online.value = navigator.onLine; }
 function clearFiles() {
@@ -210,9 +241,14 @@ function refreshFromPush(event) {
 onMounted(async () => {
     window.addEventListener("cci:push", refreshFromPush);
     updateViewport();
-    window.visualViewport?.addEventListener('resize', updateViewport);
-    window.visualViewport?.addEventListener('scroll', updateViewport);
-    window.addEventListener('resize', updateViewport);
+    window.visualViewport?.addEventListener('resize', scheduleViewport);
+    window.visualViewport?.addEventListener('scroll', scheduleViewport);
+    window.addEventListener('resize', settleViewport);
+    window.addEventListener('orientationchange', settleViewport);
+    window.addEventListener('pageshow', restoreViewport);
+    document.addEventListener('visibilitychange', restoreViewport);
+    document.addEventListener('focusin', settleViewport);
+    document.addEventListener('focusout', settleViewport);
     window.addEventListener('online', updateConnection);
     window.addEventListener('offline', updateConnection);
     await initialize();
@@ -221,9 +257,16 @@ onMounted(async () => {
 onUnmounted(() => {
     window.removeEventListener("cci:push", refreshFromPush);
     disposed = true;
-    window.visualViewport?.removeEventListener('resize', updateViewport);
-    window.visualViewport?.removeEventListener('scroll', updateViewport);
-    window.removeEventListener('resize', updateViewport);
+    window.visualViewport?.removeEventListener('resize', scheduleViewport);
+    window.visualViewport?.removeEventListener('scroll', scheduleViewport);
+    window.removeEventListener('resize', settleViewport);
+    window.removeEventListener('orientationchange', settleViewport);
+    window.removeEventListener('pageshow', restoreViewport);
+    document.removeEventListener('visibilitychange', restoreViewport);
+    document.removeEventListener('focusin', settleViewport);
+    document.removeEventListener('focusout', settleViewport);
+    cancelAnimationFrame(viewportFrame);
+    clearTimeout(viewportTimer);
     window.removeEventListener('online', updateConnection);
     window.removeEventListener('offline', updateConnection);
     clearInterval(timer);
@@ -244,6 +287,7 @@ const attachments = (message) =>
 </script>
 <template>
     <section class="conversation" :style="viewportStyle" aria-label="Conversa da negociação">
+        <div ref="viewportMeasure" class="conversation-viewport-measure" aria-hidden="true"></div>
         <header class="conversation-header">
             <RouterLink class="chat-icon" to="/app/negociacoes" aria-label="Voltar às negociações"><Icon name="arrow" /></RouterLink>
             <span class="conversation-avatar" aria-hidden="true">{{ otherPerson?.name?.slice(0, 1) || 'C' }}</span>
