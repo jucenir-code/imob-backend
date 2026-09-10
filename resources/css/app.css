@@ -1593,3 +1593,11 @@ main {
     .composer-row { gap: 4px; }
     .conversation .file-button { padding: 0; width: 36px; }
 }
+
+.notification-invite { display: block; margin: 0 0 18px; font-size: 13px; color: var(--pink); }
+.notification-settings { max-width: 680px; }
+
+.push-toast { position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px; left: 12px; margin-left: auto; max-width: 380px; z-index: 80; display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: white; border: 1px solid var(--border); border-left: 4px solid var(--pink); border-radius: 12px; box-shadow: 0 4px 24px #18223522; }
+.push-toast a { flex: 1; min-width: 0; }
+.push-toast strong, .push-toast span { display: block; font-size: 13px; line-height: 1.5; }
+.push-toast span { color: var(--muted); }

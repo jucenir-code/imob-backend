@@ -204,7 +204,11 @@ async function send() {
         busy.value = false;
     }
 }
+function refreshFromPush(event) {
+    if (event.detail.url === `/app/negociacoes/${id}`) refresh();
+}
 onMounted(async () => {
+    window.addEventListener("cci:push", refreshFromPush);
     updateViewport();
     window.visualViewport?.addEventListener('resize', updateViewport);
     window.visualViewport?.addEventListener('scroll', updateViewport);
@@ -215,6 +219,7 @@ onMounted(async () => {
     if (!disposed) timer = setInterval(refresh, 15000);
 });
 onUnmounted(() => {
+    window.removeEventListener("cci:push", refreshFromPush);
     disposed = true;
     window.visualViewport?.removeEventListener('resize', updateViewport);
     window.visualViewport?.removeEventListener('scroll', updateViewport);
@@ -296,6 +301,7 @@ const attachments = (message) =>
             <header><h2 id="conversation-details-title">Dados da negociação</h2><button type="button" class="chat-icon" aria-label="Fechar detalhes" @click="detailsDialog.close()"><Icon name="close" /></button></header>
             <template v-if="deal">
                 <p class="badge">{{ dealStatuses[deal.status] }}</p>
+                <p><RouterLink class="text-button" to="/app/notificacoes">Configurar notificações</RouterLink></p>
                 <p class="small muted">Use o chat interno. Não compartilhe telefone, e-mail ou links de contato. Anexe até 6 imagens por mensagem; até 20 MB por arquivo.</p>
                 <p v-if="error" class="alert error" role="alert">{{ error }}</p>
                     <form @submit.prevent="save(false)">

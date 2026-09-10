@@ -1,8 +1,10 @@
 import { reactive } from "vue";
+import { syncPush } from "./push";
 import { http, unwrap } from "./http";
 export const session = reactive({ user: null });
 export async function loadSession() {
     session.user = unwrap(await http.get("/profile"));
+    syncPush(session.user.id).catch(() => {});
     return session.user;
 }
 export function managesGroup(id) {

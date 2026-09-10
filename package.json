@@ -4,7 +4,8 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "test:web": "playwright test"
+        "test:web": "playwright test",
+        "test:push-worker": "node --test tests/Browser/service-worker.test.js"
     },
     "devDependencies": {
         "@playwright/test": "^1.63.0",

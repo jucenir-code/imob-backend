@@ -59,7 +59,7 @@ try:
     origin = 'http://127.0.0.1:' + port
     browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
-    def request(path, payload=None, csrf=None):
+    def request(path, payload=None, csrf=None, method=None):
         headers = {'Accept': 'application/json' if path.startswith(('/web/', '/session/', '/api/')) or payload is not None else 'text/html'}
         if csrf:
             headers['X-CSRF-TOKEN'] = csrf
@@ -67,7 +67,7 @@ try:
         if payload is not None:
             headers['Content-Type'] = 'application/json'
             body = json.dumps(payload).encode()
-        return browser.open(urllib.request.Request(origin + path, data=body, headers=headers), timeout=5)
+        return browser.open(urllib.request.Request(origin + path, data=body, headers=headers, method=method), timeout=5)
 
     wait_for(lambda: request('/login').status == 200, 'Laravel HTTP readiness')
     login = request('/login').read().decode()
@@ -97,6 +97,14 @@ App\\Models\\User::create(["name"=>"Docker Smoke", "email"=>"smoke@cci.test",
     assert request('/web/admin/users').status == 200
     assert request('/app/imoveis').status == 200
     print('PASS: Native session, protected web and Linux admin controller', flush=True)
+    push_config = json.load(request('/web/push/config'))
+    assert push_config['enabled'] and len(push_config['public_key']) == 87
+    assert 'privateKey' not in push_config
+    csrf = json.load(request('/session/csrf'))['token']
+    subscription = {'endpoint': 'https://fcm.googleapis.com/fcm/send/docker-smoke', 'keys': {'p256dh': push_config['public_key'], 'auth': 'AAAAAAAAAAAAAAAAAAAAAA'}}
+    assert request('/web/push/subscriptions', subscription, csrf).status == 200
+    assert request('/web/push/subscriptions', {'endpoint': subscription['endpoint']}, csrf, 'DELETE').status == 204
+    print('PASS: Web Push key generation and authenticated enrollment/removal', flush=True)
     wait_for(lambda: docker('exec', app, 'supervisorctl', '-c', '/etc/supervisord.conf', 'status').count('RUNNING') == 4, 'all Supervisor processes', 30)
     print('PASS: Nginx, PHP-FPM, queue worker and scheduler', flush=True)
     with tempfile.TemporaryDirectory(prefix='cci-queue-smoke-') as directory:
@@ -122,7 +130,8 @@ Illuminate\Support\Facades\Queue::push(new App\Jobs\DockerSmokeJob);'''
     port = json.loads(docker('inspect', app))[0]['NetworkSettings']['Ports']['80/tcp'][0]['HostPort']
     origin = 'http://127.0.0.1:' + port
     wait_for(lambda: request('/web/profile').status == 200, 'session after restart')
-    print('PASS: Session survives restart with the same APP_KEY', flush=True)
+    assert json.load(request('/web/push/config'))['public_key'] == push_config['public_key']
+    print('PASS: Session and Web Push identity survive restart with the same APP_KEY', flush=True)
 except Exception:
     try:
         print(docker('logs', '--tail', '60', app), file=sys.stderr)

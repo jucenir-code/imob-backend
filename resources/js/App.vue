@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { session } from "./session";
 import { http, errorText } from "./http";
+import { disablePush } from "./push";
 import Icon from "./components/Icon.vue";
 const route = useRoute();
 const online = ref(navigator.onLine);
@@ -10,6 +11,18 @@ const installPrompt = ref(null);
 const update = ref(null);
 const error = ref("");
 const signingOut = ref(false);
+const pushNotice = ref(null);
+let noticeTimer;
+function receivePush(event) {
+    const data = event.data;
+    if (data?.type !== 'CCI_PUSH' || Number(data.user_id) !== session.user?.id) return;
+    if (!/^\/app\/(negociacoes|imoveis)\/\d+$/.test(data.url)) return;
+    window.dispatchEvent(new CustomEvent('cci:push', { detail: data }));
+    if (route.path === data.url) return;
+    pushNotice.value = data;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => { pushNotice.value = null; }, 8000);
+}
 const links = computed(() => [
     { to: "/app/imoveis", label: "Imóveis", icon: "home" },
     { to: "/app/negociacoes", label: "Negociações", icon: "deals" },
@@ -34,6 +47,7 @@ async function install() {
 async function logout() {
     signingOut.value = true;
     try {
+        await disablePush();
         await http.post("/logout", {}, { baseURL: "/" });
         session.user = null;
         location.assign("/login");
@@ -43,6 +57,7 @@ async function logout() {
     }
 }
 onMounted(() => {
+    navigator.serviceWorker?.addEventListener("message", receivePush);
     window.addEventListener("online", connectivity);
     window.addEventListener("offline", connectivity);
     window.addEventListener("beforeinstallprompt", captureInstall);
@@ -63,6 +78,8 @@ onMounted(() => {
         });
 });
 onUnmounted(() => {
+    navigator.serviceWorker?.removeEventListener("message", receivePush);
+    clearTimeout(noticeTimer);
     window.removeEventListener("online", connectivity);
     window.removeEventListener("offline", connectivity);
     window.removeEventListener("beforeinstallprompt", captureInstall);
@@ -78,6 +95,10 @@ function applyUpdate() {
 }
 </script>
 <template>
+    <aside v-if="pushNotice" class="push-toast" role="status">
+        <RouterLink :to="pushNotice.url" @click="pushNotice = null"><strong>{{ pushNotice.title }}</strong><span>{{ pushNotice.body }}</span></RouterLink>
+        <button class="icon-button" aria-label="Fechar aviso" @click="pushNotice = null"><Icon name="close" /></button>
+    </aside>
     <a class="skip-link" href="#main">Ir para o conteúdo</a>
     <div v-if="!online" class="network-banner" role="status">
         Você está sem conexão. Reconecte-se para carregar e salvar informações.
@@ -147,6 +168,7 @@ function applyUpdate() {
                     <span class="muted">/ {{ route.meta.title }}</span></span
                 >
                 <div class="topbar-actions">
+                    <RouterLink class="icon-button" to="/app/notificacoes" aria-label="Notificações"><Icon name="bell" /></RouterLink>
                     <span class="connection"
                         ><i :class="{ offline: !online }"></i
                         >{{ online ? "Conectado" : "Sem conexão" }}</span

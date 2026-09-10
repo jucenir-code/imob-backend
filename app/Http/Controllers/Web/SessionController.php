@@ -24,6 +24,10 @@ class SessionController extends Controller
 
     public function destroy(Request $request)
     {
+        if ($endpointHash = $request->session()->get('web_push_endpoint_hash')) {
+            \App\Models\WebPushSubscription::where('user_id', $request->user()->id)
+                ->where('endpoint_hash', $endpointHash)->delete();
+        }
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

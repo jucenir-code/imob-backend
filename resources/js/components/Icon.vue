@@ -1,6 +1,7 @@
 <script setup>
 defineProps({ name: String });
 const paths = {
+    bell: "M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4",
     info: "M12 11v6M12 7h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
     clip: "m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9M6 14l8-8",
     send: "m22 2-7 20-4-9-9-4ZM22 2 11 13",

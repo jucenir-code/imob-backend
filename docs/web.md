@@ -39,12 +39,18 @@ As regras de domínio continuam nos controllers/policies existentes. A interface
 
 Em produção, use HTTPS, configure `APP_URL` com a URL pública e `SESSION_SECURE_COOKIE=true`. Use o mesmo domínio para páginas e requisições da web. A instalação depende do suporte do navegador; no iPhone, use Compartilhar → Adicionar à Tela de Início. Na atualização do service worker, a interface oferece um botão para recarregar a nova versão.
 
-**Limitação de paridade:** as notificações push existentes usam Expo e continuam atendendo o aplicativo. Entrega em segundo plano no navegador ainda requer a integração de Web Push, assinaturas de navegador e configuração VAPID. Instalar o PWA não converte automaticamente o push Expo em push web.
+**Notificações web:** o botão de sino abre `/app/notificacoes`. Após consentimento, cada dispositivo recebe avisos de novas mensagens nas suas negociações e de imóveis ativos cadastrados por outros corretores. Para imóveis, os destinatários precisam estar ativos e aprovados (ou ser administradores). O envio usa a fila Laravel e Web Push com VAPID; o Expo continua atendendo o aplicativo. Os avisos têm texto genérico, sem conteúdo privado da conversa na tela bloqueada. Com a web aberta, um aviso interno aparece; se a conversa correspondente estiver aberta, seu histórico é atualizado. Ao tocar, a rota autenticada abre o registro correspondente.
+
+No iPhone/iPad, adicione à Tela de Início e abra pelo ícone antes de ativar (iOS 16.4+). Android requer navegador compatível e permissão para notificações. O usuário pode desativar neste dispositivo; sair da conta remove a inscrição associada à sessão. As chaves VAPID são geradas automaticamente na primeira configuração e armazenadas criptografadas em `web_push_keys`. Preserve banco e `APP_KEY` nos deploys. `WEB_PUSH_ENABLED=false` desliga o recurso; `WEB_PUSH_SUBJECT` pode definir um contato `mailto:` ou URL HTTPS, usando `APP_URL` por padrão.
+
+Fontes: [Web Push PHP](https://github.com/web-push-libs/web-push-php), [requisitos Apple](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
+
 
 ## Verificações
 
 ```sh
 php artisan test
+npm run test:push-worker
 npm run build
 npx playwright install chromium
 npm run test:web
@@ -61,3 +67,7 @@ Referências de implementação: [Laravel + Vue/Vite](https://laravel.com/docs/1
 O ajuste do chat usa [VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport) para acompanhar teclado e barras do navegador. Os testes simulam a redução e o deslocamento da área visível; não substituem uma verificação em iPhone físico.
 
 Validação do novo chat: os cenários de login, conversa e administração passaram no WebKit 26.6. O cenário de navegação offline retorna `WebKit encountered an internal error` ao navegar após `context.setOffline(true)`, mesmo com o service worker controlando a página; esse cenário não foi validado nesse navegador. O service worker não foi alterado nesta revisão.
+
+Validação do Web Push: testes de destinatários, autenticação/CSRF, troca de conta, expiração, transações e persistência de chaves. O navegador usa uma inscrição simulada nos testes: a entrega real ao telefone depende da instalação e permissão no dispositivo e precisa ser conferida após o deploy. PHP mínimo: 8.2.
+
+O WebKit automatizado não expõe a Push API neste ambiente. A orientação de instalação é validada nele; o fluxo de inscrição/remoção usa APIs de push simuladas no Chromium. A criptografia AES128GCM/VAPID e as respostas dos provedores são verificadas com transporte HTTP simulado.

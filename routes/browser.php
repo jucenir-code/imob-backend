@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 
 // Loaded by web.php: native Laravel session, CSRF, and the existing domain controllers.
 Route::prefix('web')->name('web.')->middleware('auth:web')->group(function () {
+    Route::get('push/config', [\App\Http\Controllers\Web\WebPushController::class, 'config'])->name('push.config');
+    Route::post('push/subscriptions', [\App\Http\Controllers\Web\WebPushController::class, 'store'])->middleware('throttle:30,1')->name('push.store');
+    Route::delete('push/subscriptions', [\App\Http\Controllers\Web\WebPushController::class, 'destroy'])->name('push.destroy');
     Route::get('profile', [AuthController::class, 'me'])->name('profile');
     Route::apiResource('groups', GroupController::class);
     Route::post('groups/{group}/members', [GroupMemberController::class, 'store'])->name('groups.members.store');

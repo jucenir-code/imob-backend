@@ -75,3 +75,17 @@ python3 docker/smoke-test.py jcinformatica/circles-backend:VERSAO
 ```
 
 Esse teste cria containers temporários, usa um banco MySQL separado e remove seus próprios recursos ao terminar. Verifica HTTP, assets Vue, API, PWA, login, administração, os quatro processos e persistência da sessão após reiniciar o container.
+
+## Notificações no celular
+
+Esta versão inclui as migrations `web_push_keys` e `web_push_subscriptions`. O entrypoint as executa normalmente. Não precisa gerar nem copiar chaves manualmente: a identidade VAPID é criada na primeira visita autenticada a `/app/notificacoes` e fica criptografada no banco. Preserve o banco e a mesma `APP_KEY`, incluindo nos backups e nas réplicas.
+
+- `APP_URL` deve ser a URL pública HTTPS; é usada também como contato VAPID.
+- `WEB_PUSH_SUBJECT` é opcional (URL HTTPS ou `mailto:email@dominio`).
+- `WEB_PUSH_ENABLED` é `true` por padrão; use `false` para interromper novas inscrições e envios.
+- O worker precisa estar executando a fila `database`, com saída HTTPS liberada para os serviços de push dos navegadores.
+- O acesso à tela de notificações não solicita permissão automaticamente: o usuário toca em **Ativar notificações**.
+
+No iPhone, adicione à Tela de Início e abra pelo ícone (iOS 16.4+). Android permite em navegadores compatíveis. Para conferir a entrega, ative em duas contas de teste em dispositivos diferentes, envie uma mensagem entre elas e cadastre um imóvel ativo; confira o aviso e a abertura da conversa/imóvel. Avisos de imóveis são enviados aos usuários ativos aprovados e administradores, excluindo quem cadastrou.
+
+Os testes automatizados simulam o serviço de push; o smoke test verifica geração, persistência das chaves e inscrição no container, sem enviar avisos para pessoas reais.

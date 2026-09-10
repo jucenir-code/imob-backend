@@ -74,6 +74,7 @@ onMounted(() => load());
                 ><Icon name="plus" />Cadastrar imóvel</RouterLink
             >
         </div>
+        <RouterLink class="notification-invite" to="/app/notificacoes">Ative os avisos de novas mensagens e imóveis →</RouterLink>
         <form class="panel filters" @submit.prevent="load()">
             <label class="search-field"
                 >Bairro

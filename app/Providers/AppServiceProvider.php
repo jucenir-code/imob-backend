@@ -14,6 +14,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \App\Models\Property::observe(\App\Observers\WebPushObserver::class);
+        \App\Models\DealMessage::observe(\App\Observers\WebPushObserver::class);
         // Força HTTPS em produção (necessário quando atrás de proxy reverso com SSL)
         if ($this->app->environment('production')) {
             URL::forceScheme('https');

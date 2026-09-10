@@ -5,6 +5,7 @@ import { loadSession, session } from "./session";
 const router = createRouter({
     history: createWebHistory(),
     routes: [
+        { path: "/app/notificacoes", component: () => import("./pages/Notifications.vue"), meta: { title: "Notificações" } },
         {
             path: "/login",
             component: () => import("./pages/Login.vue"),

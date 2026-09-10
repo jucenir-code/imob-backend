@@ -61,3 +61,38 @@ self.addEventListener("fetch", (event) => {
         );
     }
 });
+
+self.addEventListener('push', (event) => {
+    let payload = {};
+    try { payload = event.data?.json() || {}; } catch {}
+    // Always show a visible notification, including on iOS. No private chat text.
+    const url = /^\/app\/(negociacoes|imoveis)\/\d+$/.test(payload.url) ? payload.url : '/app/imoveis';
+    event.waitUntil((async () => {
+        await self.registration.showNotification(payload.title || 'Novidade na CCI', {
+        body: payload.body || 'Abra a CCI para conferir.',
+        icon: '/icons/icon-512.png',
+        badge: '/icons/icon-512.png',
+        tag: payload.tag || 'cci-notification',
+        data: { url },
+        });
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of windows) client.postMessage({ type: 'CCI_PUSH', title: payload.title, body: payload.body, url, user_id: payload.user_id });
+    })());
+});
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const path = event.notification.data?.url;
+    const url = new URL(/^\/app\/(negociacoes|imoveis)\/\d+$/.test(path) ? path : '/app/imoveis', self.location.origin).href;
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        const existing = windows.find(client => new URL(client.url).origin === self.location.origin);
+        if (existing) {
+            try {
+                await existing.navigate(url);
+                await existing.focus();
+                return;
+            } catch { /* The window may have closed since matchAll(). */ }
+        }
+        await self.clients.openWindow(url);
+    })());
+});

@@ -218,3 +218,70 @@ test("PWA manifest and offline fallback do not cache session pages", async ({
         ),
     ).toBe(false);
 });
+
+test('notification opt-in, denial, disable and logout cleanup', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'The automated WebKit runtime does not expose the Push API; install guidance is tested separately.');
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'standalone', { get: () => true });
+        let permission = sessionStorage.getItem('push-test-permission') || 'default';
+        Object.defineProperty(Notification, 'permission', { get: () => permission });
+        Notification.requestPermission = async () => {
+            permission = window.__permissionResult || 'granted';
+            sessionStorage.setItem('push-test-permission', permission);
+            return permission;
+        };
+        const restore = () => {
+            const stored = JSON.parse(sessionStorage.getItem('push-test-sub') || 'null');
+            return stored && {
+                endpoint: stored.endpoint,
+                options: {},
+                toJSON: () => stored,
+                unsubscribe: async () => { sessionStorage.removeItem('push-test-sub'); return true; },
+            };
+        };
+        PushManager.prototype.getSubscription = async () => restore();
+        PushManager.prototype.subscribe = async (options) => {
+            const key = btoa(String.fromCharCode(...options.applicationServerKey)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            sessionStorage.setItem('push-test-sub', JSON.stringify({ endpoint: 'https://fcm.googleapis.com/fcm/send/browser-push-test', keys: { p256dh: key, auth: 'AAAAAAAAAAAAAAAAAAAAAA' } }));
+            return restore();
+        };
+    });
+    await login(page);
+    await page.getByRole('link', { name: 'Notificações', exact: true }).click();
+    await page.evaluate(() => { window.__permissionResult = 'denied'; });
+    await page.getByRole('button', { name: 'Ativar notificações', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('Permita as notificações');
+    await page.evaluate(() => { window.__permissionResult = 'granted'; });
+    const subscribed = page.waitForResponse(response => response.url().endsWith('/push/subscriptions') && response.request().method() === 'POST');
+    await page.getByRole('button', { name: 'Ativar notificações', exact: true }).click();
+    expect((await subscribed).status()).toBe(200);
+    await expect(page.getByRole('status')).toContainText('Notificações ativadas');
+    const disabled = page.waitForResponse(response => response.url().endsWith('/push/subscriptions') && response.request().method() === 'DELETE');
+    await page.getByRole('button', { name: 'Desativar notificações', exact: true }).click();
+    expect((await disabled).status()).toBe(204);
+    await expect(page.getByRole('status')).toContainText('Notificações desativadas');
+    await page.getByRole('button', { name: 'Ativar notificações', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Notificações ativadas');
+    const deleted = page.waitForResponse(response => response.url().endsWith('/push/subscriptions') && response.request().method() === 'DELETE');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow(page);
+    await page.screenshot({ path: 'test-results/cci-notifications-mobile.png' });
+    await page.getByRole('button', { name: 'Sair da conta' }).last().click();
+    expect((await deleted).status()).toBe(204);
+    await expect(page).toHaveURL(/\/login$/);
+    expect(await page.evaluate(() => localStorage.getItem('cci-push-user'))).toBeNull();
+});
+
+
+test('iPhone notification setup explains Home Screen installation', async ({ page }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'userAgent', { get: () => 'iPhone' });
+        Object.defineProperty(navigator, 'standalone', { get: () => false });
+    });
+    await login(page);
+    await page.goto('/app/notificacoes');
+    await expect(page.getByRole('status')).toContainText('Adicionar à Tela de Início');
+    await expect(page.getByRole('button', { name: 'Ativar notificações', exact: true })).toHaveCount(0);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await noOverflow(page);
+});
